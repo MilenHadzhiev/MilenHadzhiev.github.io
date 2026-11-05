@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Milen Hadzhiev</title>
+    <!--
+	 include wasi polyfill when ready
+    -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/loading.css">
+    <link rel="stylesheet" href="css/error.css">
+</head>
+<body>
+    <main id="app" data-state="loading">
+        <section class="state state--loading card" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <h1>Starting Python<span class="dots" aria-hidden="true"></span></h1>
+            <p>Fetching and compiling the WebAssembly module. This may take a moment on first visit.</p>
+            <div class="progress" aria-hidden="true"></div>
+        </section>
+
+        <section class="state state--error card" role="alert">
+            <div class="error-icon" aria-hidden="true">!</div>
+            <h1>Failed to load Python module</h1>
+            <p>Something went wrong while loading the WebAssembly runtime. Check your connection and try again.</p>
+            <details class="error-details">
+                <summary>Technical details</summary>
+                <pre id="error-details"></pre>
+            </details>
+            <a class="button" href="">Try again</a>
+        </section>
+
+        <section class="state state--ready">
+            <div id="output"></div>
+        </section>
+    </main>
+
+    <noscript>
+        <style>#app .state--loading { display: none; } #app .state--error { display: flex; }</style>
+    </noscript>
+
+    <script type="module">
+        const app = document.getElementById('app');
+
+        async function runWasm() {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 3000)); // TODO: remove: delay to preview loading state
+                const response = await fetch('./main.wasm');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} ${response.statusText} while fetching main.wasm`);
+                }
+                const bytes = await response.arrayBuffer();
+
+                const { instance } = await WebAssembly.instantiate(bytes, {
+                    // In a real scenario, your WASI polyfill would populate this
+                    // import object with the functions your module needs.
+                    // For a very simple script, it might be nearly empty.
+                });
+
+                document.getElementById('output').textContent = 'TBC....';
+                app.dataset.state = 'ready';
+
+            } catch (error) {
+                console.error('Error loading WebAssembly:', error);
+                document.getElementById('error-details').textContent = String(error?.stack || error);
+                app.dataset.state = 'error';
+            }
+        }
+
+        runWasm();
+    </script>
+</body>
+</html>

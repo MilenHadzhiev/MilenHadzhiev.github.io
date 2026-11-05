@@ -1,0 +1,36 @@
+.error-icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.error-details {
+    width: 100%;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+.error-details summary {
+    cursor: pointer;
+    user-select: none;
+}
+.error-details pre {
+    margin: 8px 0 0;
+    padding: 12px;
+    max-height: 160px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: 0.8rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.error-details pre:empty::before { content: "No additional details."; }

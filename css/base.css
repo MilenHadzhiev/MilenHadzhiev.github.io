@@ -1,0 +1,93 @@
+:root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #1d2330;
+    --muted: #5f6878;
+    --border: #e3e6eb;
+    --accent: #3572a5;
+    --accent-2: #f2c94c;
+    --danger: #c8362e;
+    --danger-soft: #fdecea;
+    --radius: 14px;
+    color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #12151b;
+        --surface: #1a1f27;
+        --text: #e7eaf0;
+        --muted: #9aa3b2;
+        --border: #2a313c;
+        --accent: #5b9bd5;
+        --danger: #ff6b61;
+        --danger-soft: #3a1f1e;
+        color-scheme: dark;
+    }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#app {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.state { display: none; }
+#app[data-state="loading"] .state--loading,
+#app[data-state="error"]   .state--error,
+#app[data-state="ready"]   .state--ready { display: flex; }
+
+.card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    width: min(420px, 100%);
+    padding: 40px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.06);
+}
+.card h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    transition: filter .15s, transform .15s;
+}
+.button:hover  { filter: brightness(1.08); }
+.button:active { transform: translateY(1px); }
+.button:focus-visible {
+    outline: 3px solid var(--accent-2);
+    outline-offset: 2px;
+}
+
+.state--ready { width: min(720px, 100%); }
