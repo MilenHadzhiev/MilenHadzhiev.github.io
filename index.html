@@ -16,8 +16,7 @@
     <main id="app" data-state="loading">
         <section class="state state--loading card" role="status" aria-live="polite">
             <div class="spinner" aria-hidden="true"></div>
-            <h1>Starting Python<span class="dots" aria-hidden="true"></span></h1>
-            <p>Fetching and compiling the WebAssembly module. This may take a moment on first visit.</p>
+            <h1>Loading...<span class="dots" aria-hidden="true"></span></h1>
             <div class="progress" aria-hidden="true"></div>
         </section>
 
@@ -151,8 +150,6 @@
         // we fetch them, and run it again until it has everything.
         async function load() {
             try {
-                await new Promise(resolve => setTimeout(resolve, 3000)); // TEMP: delay to preview loading state
-
                 const assets = await loadAssets();
                 const responses = {};
 
