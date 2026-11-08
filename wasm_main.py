@@ -164,6 +164,13 @@ def load_profile(account: str) -> tuple[dict, list[dict]]:
     return profile, socials
 
 
+def render_contact(email: str) -> str:
+    return (
+        f'<button type="button" class="profile-link profile-link--primary" data-copy="{escape(email)}" '
+        f'title="Copy {escape(email)}">{ICON_MAIL}Get in touch</button>'
+    )
+
+
 def render_profile(account: str, profile: dict, socials: list[dict]) -> str:
     login = profile.get('login') or account
     name = profile.get('name') or login
@@ -184,9 +191,9 @@ def render_profile(account: str, profile: dict, socials: list[dict]) -> str:
 
     links = []
     is_owner = login.lower() == ACCOUNT.lower()
-    email = (CONTACT_EMAIL if is_owner else '') or profile.get('email') or ''
-    if email:
-        links.append(f'<a class="profile-link profile-link--primary" href="mailto:{escape(email)}">{ICON_MAIL}Get in touch</a>')
+    email = profile.get('email') or CONTACT_EMAIL
+    if is_owner and email:
+        links.append(render_contact(email))
     links.append(f'<a class="profile-link" href="{escape(github_url)}" rel="noopener">{ICON_GITHUB}GitHub</a>')
 
     seen = {github_url.rstrip('/').lower()}

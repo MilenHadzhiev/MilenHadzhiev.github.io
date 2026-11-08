@@ -216,6 +216,26 @@
     color: #fff;
 }
 .profile-link--primary:hover { border-color: transparent; filter: brightness(1.08); }
+button.profile-link {
+    position: relative;
+    font-family: inherit;
+    cursor: pointer;
+}
+button.profile-link[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--text);
+    color: var(--surface);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+}
 .profile-link:focus-visible {
     outline: 3px solid var(--accent-2);
     outline-offset: 2px;

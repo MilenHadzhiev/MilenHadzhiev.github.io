@@ -178,6 +178,20 @@
             }
         }
 
+        document.addEventListener('click', async event => {
+            const button = event.target.closest('[data-copy]');
+            if (!button) return;
+            const text = button.dataset.copy;
+            try {
+                await navigator.clipboard.writeText(text);
+                button.dataset.tooltip = 'Email copied!';
+            } catch {
+                button.dataset.tooltip = text;
+            }
+            clearTimeout(button.tooltipTimer);
+            button.tooltipTimer = setTimeout(() => { delete button.dataset.tooltip; }, 2000);
+        });
+
         load();
     </script>
 </body>
