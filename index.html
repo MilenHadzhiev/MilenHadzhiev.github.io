@@ -47,7 +47,7 @@
         const STDLIB_ZIP = 'python315.zip'; // must match the Python version
         const ALLOWED_PREFIX = 'https://api.github.com/';
         const MAX_PASSES = 6;
-        const CACHE_TTL_MS = 60 * 60 * 1000; // GitHub allows 60 unauthenticated requests/hour
+        const CACHE_TTL_MS = 5 * 60 * 1000; // GitHub allows 60 unauthenticated requests/hour
 
         const app = document.getElementById('app');
         const requestedUser = new URLSearchParams(location.search).get('user') ?? '';
