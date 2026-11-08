@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/loading.css">
     <link rel="stylesheet" href="css/error.css">
+    <link rel="stylesheet" href="css/ready.css">
 </head>
 <body>
     <main id="app" data-state="loading">
@@ -41,26 +42,135 @@
     </noscript>
 
     <script type="module">
+        import { WASI, File, Directory, OpenFile, ConsoleStdout, PreopenDirectory }
+            from './vendor/browser_wasi_shim.js';
+
+        const STDLIB_ZIP = 'python315.zip'; // must match the Python version
+        const ALLOWED_PREFIX = 'https://api.github.com/';
+        const MAX_PASSES = 6;
+        const CACHE_TTL_MS = 60 * 60 * 1000; // GitHub allows 60 unauthenticated requests/hour
+
         const app = document.getElementById('app');
+        const requestedUser = new URLSearchParams(location.search).get('user') ?? '';
 
-        async function runWasm() {
+        // local dev only: higher rate limit with ./TOKEN
+        const IS_LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+        const tokenPromise = IS_LOCAL ? loadToken() : Promise.resolve(null);
+
+        async function loadToken() {
             try {
-                await new Promise(resolve => setTimeout(resolve, 3000)); // TODO: remove: delay to preview loading state
-                const response = await fetch('./main.wasm');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status} ${response.statusText} while fetching main.wasm`);
+                const response = await fetch('./TOKEN', { cache: 'no-store' });
+                if (!response.ok) return null;
+                const token = (await response.text()).trim();
+                return /^(gh[pousr]_|github_pat_)\w+$/.test(token) ? token : null;
+            } catch {
+                return null;
+            }
+        }
+
+        async function fetchBytes(url) {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} ${response.statusText} while fetching ${url}`);
+            }
+            return new Uint8Array(await response.arrayBuffer());
+        }
+
+        // Generic transport: Python names URLs, we fetch them. Python never sees headers.
+        async function fetchForPython(url) {
+            if (!url.startsWith(ALLOWED_PREFIX)) {
+                throw new Error(`Python asked for a disallowed URL: ${url}`);
+            }
+            const key = `resp:${url}`;
+            try {
+                const hit = JSON.parse(localStorage.getItem(key));
+                if (hit && Date.now() - hit.time < CACHE_TTL_MS) return hit.entry;
+            } catch { /* storage unavailable or corrupt: just fetch */ }
+
+            const token = await tokenPromise;
+            const response = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+            const entry = {
+                status: response.status,
+                link: response.headers.get('link'),
+                body: await response.text(),
+            };
+            if (response.ok) {
+                try {
+                    localStorage.setItem(key, JSON.stringify({ time: Date.now(), entry }));
+                } catch { /* quota or private mode: ignore */ }
+            }
+            return entry;
+        }
+
+        async function loadAssets() {
+            const [wasm, stdlib, appZip] = await Promise.all([
+                fetchBytes('./main.wasm'),
+                fetchBytes('./stdlib.zip'),
+                fetchBytes('./app.zip'),
+            ]);
+            return { module: await WebAssembly.compile(wasm), stdlib, appZip };
+        }
+
+        // One run of Python; returns its parsed stdout line.
+        async function runPython({ module, stdlib, appZip }, responses) {
+            const stdout = [];
+            const stderr = [];
+            const fds = [
+                new OpenFile(new File([])),
+                ConsoleStdout.lineBuffered(line => stdout.push(line)),
+                ConsoleStdout.lineBuffered(line => stderr.push(line)),
+                new PreopenDirectory('/', new Map([
+                    ['lib', new Directory(new Map([
+                        [STDLIB_ZIP, new File(stdlib)],
+                        ['app.zip', new File(appZip)],
+                    ]))],
+                    ['data', new Directory(new Map([
+                        ['responses.json', new File(new TextEncoder().encode(JSON.stringify(responses)))],
+                    ]))],
+                ])),
+            ];
+
+            const wasi = new WASI(
+                ['python', '-m', 'wasm_main'],
+                ['PYTHONHOME=/', 'PYTHONPATH=/lib/app.zip', 'PYTHONDONTWRITEBYTECODE=1',
+                 `GITHUB_USER=${requestedUser}`],
+                fds,
+            );
+            const instance = await WebAssembly.instantiate(module, {
+                wasi_snapshot_preview1: wasi.wasiImport,
+            });
+
+            const exitCode = wasi.start(instance);
+            if (exitCode !== 0) {
+                throw new Error(`Python exited with code ${exitCode}\n${stderr.join('\n')}`);
+            }
+            return JSON.parse(stdout.join('\n'));
+        }
+
+        // Python can't open sockets under WASI. It reports the URLs it needs,
+        // we fetch them, and run it again until it has everything.
+        async function load() {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 3000)); // TEMP: delay to preview loading state
+
+                const assets = await loadAssets();
+                const responses = {};
+
+                for (let pass = 0; pass < MAX_PASSES; pass++) {
+                    const result = await runPython(assets, responses);
+                    if (result.html !== undefined) {
+                        document.getElementById('output').innerHTML = result.html;
+                        app.dataset.state = 'ready';
+                        return;
+                    }
+                    const urls = result.need.filter(url => !(url in responses));
+                    if (urls.length === 0) {
+                        throw new Error('Python keeps asking for URLs it already has');
+                    }
+                    const entries = await Promise.all(urls.map(fetchForPython));
+                    urls.forEach((url, i) => { responses[url] = entries[i]; });
                 }
-                const bytes = await response.arrayBuffer();
-
-                const { instance } = await WebAssembly.instantiate(bytes, {
-                    // In a real scenario, your WASI polyfill would populate this
-                    // import object with the functions your module needs.
-                    // For a very simple script, it might be nearly empty.
-                });
-
-                document.getElementById('output').textContent = 'TBC....';
-                app.dataset.state = 'ready';
-
+                throw new Error(`Python still needs data after ${MAX_PASSES} passes`);
             } catch (error) {
                 console.error('Error loading WebAssembly:', error);
                 document.getElementById('error-details').textContent = String(error?.stack || error);
@@ -68,7 +178,7 @@
             }
         }
 
-        runWasm();
+        load();
     </script>
 </body>
 </html>

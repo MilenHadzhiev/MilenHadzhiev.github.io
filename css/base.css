@@ -1,11 +1,16 @@
 :root {
-    --bg: #f6f7f9;
+    --bg: #eef0fb;
     --surface: #ffffff;
-    --text: #1d2330;
-    --muted: #5f6878;
-    --border: #e3e6eb;
-    --accent: #3572a5;
-    --accent-2: #f2c94c;
+    --glow-1: rgb(99 102 241 / 0.22);
+    --glow-2: rgb(20 184 166 / 0.18);
+    --glow-3: rgb(236 72 153 / 0.08);
+    --dot: rgb(67 56 202 / 0.08);
+    --text: #1c1f33;
+    --muted: #5d6280;
+    --border: #e0e2f2;
+    --accent: #4f46e5;
+    --accent-2: #14b8a6;
+    --accent-3: #ec4899;
     --danger: #c8362e;
     --danger-soft: #fdecea;
     --radius: 14px;
@@ -13,12 +18,18 @@
 }
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #12151b;
-        --surface: #1a1f27;
-        --text: #e7eaf0;
-        --muted: #9aa3b2;
-        --border: #2a313c;
-        --accent: #5b9bd5;
+        --bg: #0d0f1e;
+        --surface: #161a2e;
+        --glow-1: rgb(99 102 241 / 0.24);
+        --glow-2: rgb(20 184 166 / 0.13);
+        --glow-3: rgb(236 72 153 / 0.07);
+        --dot: rgb(199 210 254 / 0.06);
+        --text: #e8e9f5;
+        --muted: #9ea2c0;
+        --border: #272b47;
+        --accent: #818cf8;
+        --accent-2: #2dd4bf;
+        --accent-3: #f472b6;
         --danger: #ff6b61;
         --danger-soft: #3a1f1e;
         color-scheme: dark;
@@ -36,6 +47,27 @@ body {
     background: var(--bg);
     color: var(--text);
     font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+body::before {
+    background:
+        radial-gradient(60vmax 45vmax at 0% 0%, var(--glow-1), transparent 70%),
+        radial-gradient(35vmax 30vmax at 100% 30%, var(--glow-3), transparent 70%),
+        radial-gradient(50vmax 40vmax at 100% 100%, var(--glow-2), transparent 70%);
+}
+body::after {
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.5px);
+    background-size: 22px 22px;
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 85%);
+    mask-image: linear-gradient(to bottom, #000, transparent 85%);
 }
 
 #app {
@@ -90,4 +122,3 @@ body {
     outline-offset: 2px;
 }
 
-.state--ready { width: min(720px, 100%); }
